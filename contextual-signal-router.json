@@ -1,0 +1,316 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 10,
+              "weekday": "5"
+            }
+          ]
+        }
+      },
+      "name": "Monday Blog Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        272
+      ],
+      "id": "bf0917ac-bd81-4a96-bd95-f7d9372a0376"
+    },
+    {
+      "parameters": {
+        "functionCode": "return [\n  {\n    json: {\n      __mode: 'BLOG'\n    }\n  }\n];\n"
+      },
+      "name": "Set BLOG Mode",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        272
+      ],
+      "id": "9bbe18d9-7c61-43ff-b690-d2ba7d4fba5d"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 10,
+              "weekday": "4"
+            }
+          ]
+        }
+      },
+      "name": "Thursday News Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        496
+      ],
+      "id": "2a76167a-a949-4ee2-9864-2b86ef1d1981"
+    },
+    {
+      "parameters": {
+        "functionCode": "return [\n  {\n    json: {\n      __mode: 'NEWS'\n    }\n  }\n];\n"
+      },
+      "name": "Set NEWS Mode",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        496
+      ],
+      "id": "28db4159-5585-4a8f-a4ca-b2876189ef03"
+    },
+    {
+      "parameters": {
+        "functionCode": "const sources = [\n  { name: 'Dev.to', url: 'https://dev.to/feed/tag/artificialintelligence' },\n  { name: 'TechCrunch', url: 'https://techcrunch.com/tag/artificial-intelligence/feed/' },\n  { name: 'VentureBeat', url: 'https://venturebeat.com/category/ai/feed/' },\n  { name: 'MIT Technology Review', url: 'https://www.technologyreview.com/feed/' }\n];\n\nconst pick = sources[Math.floor(Math.random() * sources.length)];\n\nreturn [\n  {\n    json: {\n      url: pick.url,\n      sourceName: pick.name,\n      __mode: $json.__mode // 🔒 PRESERVE MODE\n    }\n  }\n];\n"
+      },
+      "name": "Pick Random Source",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2048,
+        384
+      ],
+      "id": "bd83500d-4f75-4197-afa6-5d3e6f02980b"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "name": "Read RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        384
+      ],
+      "id": "82f437c6-0010-479c-a1d9-bf66fb239725"
+    },
+    {
+      "parameters": {
+        "functionCode": "const item = items[Math.floor(Math.random() * items.length)];\n\nreturn [\n  {\n    json: {\n      title: item.json.title,\n      link: item.json.link,\n      __mode: $json.__mode // 🔒 PRESERVE MODE\n    }\n  }\n];\n"
+      },
+      "name": "Pick Random Article",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        384
+      ],
+      "id": "dace99c5-4e80-48bc-9e68-5c8f330ffd84"
+    },
+    {
+      "parameters": {
+        "functionCode": "const title = $json.title || 'AI & Tech Insight';\nconst link = $json.link || '';\n\nconst mode = $json.__mode || 'NEWS'; // fallback safety\n\n\nlet post;\n\nif (mode === 'BLOG') {\n  post =\n    'This week I spent time reading and reflecting on the following piece.\\n\\n' +\n    '📝 ' + title + '\\n\\n' +\n    'What stood out to me is how AI and automation are no longer side experiments — they are actively shaping how products are built, how teams operate, and how modern tech businesses scale.\\n\\n' +\n    'It reinforces a broader shift toward strong product thinking combined with AI-driven workflows.\\n\\n' +\n    'Sharing this as a longer-form reflection for anyone exploring AI, tech, and business.\\n\\n' +\n    '🔗 Reference: ' + link + '\\n\\n' +\n    '#AI #ProductEngineering #TechBusiness #BuildInPublic #LongRead';\n}\n\nif (mode === 'NEWS') {\n  post =\n    '🚨 AI & Tech News Update\\n\\n' +\n    title + '\\n\\n' +\n    'What caught my attention here is how quickly AI and automation are moving from experimentation into real-world usage — especially across startups and modern tech businesses.\\n\\n' +\n    'Sharing this as a quick update for anyone tracking AI, tech, and business trends.\\n\\n' +\n    '🔗 Source: ' + link + '\\n\\n' +\n    '#AI #TechNews #Automation #Startups #Innovation';\n}\n\nif (!post) {\n  throw new Error('MODE NOT SET — set __mode to BLOG or NEWS');\n\n\n}\n\nreturn [{ json: { post, mode } }];\n"
+      },
+      "name": "Create Final Post",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        384
+      ],
+      "id": "a4c4a97f-1a76-469e-9ab3-1e79a0e729e9"
+    },
+    {
+      "parameters": {
+        "chatId": "5477156990",
+        "text": "={{ $json.post }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2960,
+        288
+      ],
+      "id": "71b2e7c0-2f25-41da-9513-4d37f188b9f0",
+      "name": "Send a text message",
+      "webhookId": "d78cd307-3dd8-4fcb-8339-f71d0e3deb57",
+      "credentials": {
+        "telegramApi": {
+          "id": "1oakCL70sI5GLYZN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "amantebriwal104@gmail.com",
+        "subject": "linkedin ans Twitter post ",
+        "message": "={{ $json.post }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2960,
+        480
+      ],
+      "id": "4710411f-3611-4fd2-85b2-02333a6c6915",
+      "name": "Send a message",
+      "webhookId": "69862124-2ede-4e2b-97c3-ff4a7a894857",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "j1k61u28EOnALnqK",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        384
+      ],
+      "id": "9d87bca7-58fa-4508-81df-a22d08c766f5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { __mode: 'BLOG' } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        384
+      ],
+      "id": "4c1f18e8-9a9c-4264-b35c-1d6146fdf938",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "connections": {
+    "Monday Blog Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set BLOG Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set BLOG Mode": {
+      "main": [
+        [
+          {
+            "node": "Pick Random Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thursday News Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set NEWS Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set NEWS Mode": {
+      "main": [
+        [
+          {
+            "node": "Pick Random Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Random Source": {
+      "main": [
+        [
+          {
+            "node": "Read RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RSS": {
+      "main": [
+        [
+          {
+            "node": "Pick Random Article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Random Article": {
+      "main": [
+        [
+          {
+            "node": "Create Final Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Final Post": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Pick Random Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "10864ae014024c1fef90ec8f3523254a7d8defd2dae8691ea3d2f57c301aa846"
+  }
+}
